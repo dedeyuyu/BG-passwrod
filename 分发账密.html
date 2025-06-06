@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账密分发系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+        
+        .title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .step {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .step.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        
+        .success {
+            color: #27ae60;
+            text-align: center;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        
+        .account-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .account-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .account-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .account-label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .account-value {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin: 0 10px;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .copy-btn:hover {
+            background: #218838;
+            transform: scale(1.05);
+        }
+        
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: 500;
+        }
+        
+        .reset-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+        
+        .status-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #0c5460;
+        }
+        
+        .config-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #856404;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">账密分发系统</h1>
+        
+        <!-- 步骤1: 输入姓名 -->
+        <div class="step active" id="step1">
+            <div class="status-info">
+                <strong>系统状态:</strong> <span id="systemStatus">检查中...</span>
+            </div>
+            <div class="input-group">
+                <label for="userName">请输入您的姓名:</label>
+                <input type="text" id="userName" placeholder="例如: 张三">
+            </div>
+            <button class="btn" onclick="submitName()">下一步</button>
+            <div id="nameError" class="error"></div>
+        </div>
+        
+        <!-- 步骤2: 输入密码 -->
+        <div class="step" id="step2">
+            <div class="input-group">
+                <label for="password">请输入管理密码:</label>
+                <input type="password" id="password" placeholder="请输入密码">
+            </div>
+            <button class="btn" onclick="submitPassword()">验证密码</button>
+            <button class="reset-btn" onclick="goBack()">返回上一步</button>
+            <div id="passwordError" class="error"></div>
+        </div>
+        
+        <!-- 步骤3: 显示分配的账密 -->
+        <div class="step" id="step3">
+            <div id="loadingDiv" class="loading">正在为您处理...</div>
+            <div id="accountInfo" class="account-info" style="display: none;">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #333;" id="resultTitle">🎉 账密分配成功</h3>
+                <div class="account-item">
+                    <span class="account-label">用户名:</span>
+                    <span class="account-value" id="assignedUsername">-</span>
+                    <button class="copy-btn" onclick="copyToClipboard('assignedUsername')">复制</button>
+                </div>
+                <div class="account-item">
+                    <span class="account-label">密码:</span>
+                    <span class="account-value" id="assignedPassword">-</span>
+                    <button class="copy-btn" onclick="copyToClipboard('assignedPassword')">复制</button>
+                </div>
+                <div id="assignmentInfo" class="status-info" style="margin-top: 15px; display: none;">
+                    <strong>分配时间:</strong> <span id="assignmentTime">-</span>
+                </div>
+                <button class="btn" onclick="reset()" style="margin-top: 20px;">重新开始</button>
+            </div>
+            <div id="noAccountError" class="error" style="display: none;">
+                <div id="errorMessage">处理过程中出现错误</div>
+                <button class="reset-btn" onclick="reset()">重新开始</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置信息 - 请修改这里的参数
+        let CONFIG = {
+            gasUrl: 'https://script.google.com/macros/s/AKfycbysU5WoAyDQQzRhWTT5AvaRXSF3ezw6Sb_h9eBkfiIN-I13IkfE8vuMtWqtrbeJuaienw/exec',  // 需要替换为实际的GAS URL
+            spreadsheetId: '1QC_n7MvMO5B5Xig7293d0jWBS1QNTk_IfKLMLEfNjWI',
+            sheetName: '账密',
+            adminPasswords: [
+                'juezhan1991baojialiya9',
+                'admin1239',
+                'manager4569',
+                'password7899'
+            ]
+        };
+        
+        let currentUser = '';
+        let currentPassword = '';
+        
+        // 页面加载完成后检查系统状态
+        window.onload = function() {
+            checkSystemStatus();
+        };
+        
+        // 检查系统状态
+        async function checkSystemStatus() {
+            const statusElement = document.getElementById('systemStatus');
+            
+            if (CONFIG.gasUrl.includes('你的GAS部署ID')) {
+                statusElement.innerHTML = '<span style="color: #e74c3c;">❌ 配置未完成</span>';
+                document.querySelector('.status-info').innerHTML = `
+                    <div class="config-warning">
+                        <strong>⚠️ 系统配置未完成</strong><br>
+                        请先按照说明文档完成Google Apps Script的部署和配置
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                const response = await fetch(CONFIG.gasUrl, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    statusElement.innerHTML = '<span style="color: #28a745;">✅ 系统正常</span>';
+                } else {
+                    statusElement.innerHTML = '<span style="color: #e74c3c;">⚠️ 连接异常</span>';
+                }
+            } catch (error) {
+                console.error('系统状态检查失败:', error);
+                statusElement.innerHTML = '<span style="color: #e74c3c;">❌ 无法连接</span>';
+            }
+        }
+        
+        // 提交姓名
+        function submitName() {
+            const name = document.getElementById('userName').value.trim();
+            const errorDiv = document.getElementById('nameError');
+            
+            if (!name) {
+                errorDiv.textContent = '请输入您的姓名';
+                return;
+            }
+            
+            if (CONFIG.gasUrl.includes('你的GAS部署ID')) {
+                errorDiv.textContent = '系统配置未完成，请联系管理员';
+                return;
+            }
+            
+            currentUser = name;
+            errorDiv.textContent = '';
+            showStep(2);
+        }
+        
+        // 提交密码
+        function submitPassword() {
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('passwordError');
+            
+            if (!CONFIG.adminPasswords.includes(password)) {
+                errorDiv.textContent = '密码错误，请重新输入';
+                return;
+            }
+            
+            currentPassword = password;
+            errorDiv.textContent = '';
+            showStep(3);
+            processAccount();
+        }
+        
+        // 处理账密分配
+        async function processAccount() {
+            try {
+                document.getElementById('loadingDiv').style.display = 'block';
+                document.getElementById('accountInfo').style.display = 'none';
+                document.getElementById('noAccountError').style.display = 'none';
+                
+                // 首先检查是否已有分配的账密
+                document.getElementById('loadingDiv').textContent = '正在查询您的账密...';
+                
+                const checkResponse = await callGAS('checkExisting');
+                
+                if (checkResponse.success) {
+                    // 找到已分配的账密
+                    displayAccount(checkResponse.account, true);
+                    return;
+                } else if (checkResponse.needAssign) {
+                    // 需要分配新账密
+                    document.getElementById('loadingDiv').textContent = '正在为您分配新账密...';
+                    
+                    const assignResponse = await callGAS('assignNew');
+                    
+                    if (assignResponse.success) {
+                        displayAccount(assignResponse.account, false, assignResponse.assignmentTime);
+                    } else {
+                        showError(assignResponse.error || '分配失败');
+                    }
+                } else {
+                    showError(checkResponse.error || '查询失败');
+                }
+                
+            } catch (error) {
+                console.error('处理错误:', error);
+                showError(`系统错误: ${error.message}`);
+            }
+        }
+        
+        // 调用Google Apps Script
+        async function callGAS(action) {
+            const payload = {
+                action: action,
+                userName: currentUser,
+                spreadsheetId: CONFIG.spreadsheetId,
+                sheetName: CONFIG.sheetName,
+                adminPassword: currentPassword
+            };
+            
+            const response = await fetch(CONFIG.gasUrl, {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP错误: ${response.status} ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            console.log('GAS响应:', result);
+            
+            return result;
+        }
+        
+        // 显示账密信息
+        function displayAccount(account, isExisting, assignmentTime) {
+            document.getElementById('assignedUsername').textContent = account.username;
+            document.getElementById('assignedPassword').textContent = account.password;
+            
+            const titleElement = document.getElementById('resultTitle');
+            const assignmentInfoDiv = document.getElementById('assignmentInfo');
+            
+            if (isExisting) {
+                titleElement.textContent = '🔍 找回您的账密';
+                assignmentInfoDiv.style.display = 'none';
+            } else {
+                titleElement.textContent = '🎉 账密分配成功';
+                if (assignmentTime) {
+                    document.getElementById('assignmentTime').textContent = assignmentTime;
+                    assignmentInfoDiv.style.display = 'block';
+                }
+            }
+            
+            document.getElementById('loadingDiv').style.display = 'none';
+            document.getElementById('accountInfo').style.display = 'block';
+        }
+        
+        // 显示错误信息
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('loadingDiv').style.display = 'none';
+            document.getElementById('noAccountError').style.display = 'block';
+        }
+        
+        // 复制到剪贴板
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = element.nextElementSibling;
+                const originalText = btn.textContent;
+                btn.textContent = '已复制!';
+                btn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#28a745';
+                }, 2000);
+            }).catch(() => {
+                // 备用方案
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('已复制到剪贴板');
+            });
+        }
+        
+        // 显示指定步骤
+        function showStep(stepNumber) {
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            document.getElementById(`step${stepNumber}`).classList.add('active');
+        }
+        
+        // 返回上一步
+        function goBack() {
+            showStep(1);
+            document.getElementById('password').value = '';
+            document.getElementById('passwordError').textContent = '';
+        }
+        
+        // 重置
+        function reset() {
+            showStep(1);
+            document.getElementById('userName').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('nameError').textContent = '';
+            document.getElementById('passwordError').textContent = '';
+            currentUser = '';
+            currentPassword = '';
+        }
+    </script>
+</body>
+</html>
